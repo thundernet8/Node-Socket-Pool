@@ -84,7 +84,7 @@ export default class SocketPool {
                 host,
                 port,
                 maxIdleTime,
-                this.returnResource
+                this.returnResource.bind(this)
             );
             this.resources.push(client);
             client.on("connect", () => {
@@ -176,7 +176,7 @@ export default class SocketPool {
 
     public returnResource(res: WrappedSocket) {
         if (!res.destroyed) {
-            res.end();
+            // res.end();
             res.toggleIdle(true);
         } else {
             this.removeResource(res.getId());
