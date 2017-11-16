@@ -1,4 +1,4 @@
-## Node-Socket-Pool
+## Node-Socket-Pool [![Build Status](https://travis-ci.org/thundernet8/Node-Socket-Pool.svg?branch=master)](https://travis-ci.org/thundernet8/Node-Socket-Pool)
 
 Socket connection pool for Node
 
