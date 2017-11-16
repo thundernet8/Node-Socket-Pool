@@ -140,13 +140,10 @@ export default class SocketPool {
         );
         return new Promise((resolve, reject) => {
             if (idleResources.length > 0) {
-                for (let i = 0; i < idleResources.length; i++) {
-                    let res = idleResources[i];
-                    if (res.isIdle()) {
-                        res.toggleIdle(false);
-                        return resolve(res);
-                    }
-                }
+                const i = Math.floor(Math.random() * idleResources.length);
+                const res = idleResources[i];
+                res.toggleIdle(false);
+                return resolve(res);
             } else {
                 if (resources.length < this.maxActive) {
                     this.createResources();
@@ -176,7 +173,6 @@ export default class SocketPool {
 
     public returnResource(res: WrappedSocket) {
         if (!res.destroyed) {
-            // res.end();
             res.toggleIdle(true);
         } else {
             this.removeResource(res.getId());
