@@ -1,6 +1,7 @@
 import ISocketPoolOption from "./ISocketPoolOption";
 import WrappedSocket from "./WrappedSocket";
-import schedule from "node-schedule";
+import { TimeLogger } from "./Utils";
+import * as schedule from "node-schedule";
 
 class ResourceRequest {
     private expired: boolean = false;
@@ -19,6 +20,10 @@ class ResourceRequest {
             () => {
                 this.expired = true;
                 if (!this.resolved) {
+                    TimeLogger(
+                        "Acquire socket connection failed as waiting for more than %s milliseconds",
+                        timeout
+                    );
                     this.cb(new Error("Request socket connection failed"));
                 }
             }
@@ -63,42 +68,44 @@ export default class SocketPool {
         this.maxIdleTime = maxIdleTime || 5 * 60000; // 最长5min空闲连接
         this.maxActive = Math.max(maxActive || 10, this.maxIdle);
         this.maxWait = maxWait || 3000;
+
+        this.createResources(maxIdle);
     }
 
     private createResources(count: number = 1) {
-        const {
-            maxActive,
-            maxIdleTime,
-            host,
-            port,
-            resourceRequestList
-        } = this;
+        const { maxActive, maxIdleTime, host, port } = this;
         const currentCount = this.getResourceCount();
         if (count + currentCount > maxActive) {
             count = Math.max(maxActive - currentCount, 0);
         }
         for (let i = 0; i < count; i++) {
-            const client = new WrappedSocket(host, port, maxIdleTime);
+            TimeLogger("Creating socket connection");
+            const client = new WrappedSocket(
+                host,
+                port,
+                maxIdleTime,
+                this.returnResource
+            );
+            this.resources.push(client);
             client.on("connect", () => {
-                console.log(
-                    "Socket server connectted, remote address is: %s %s",
+                TimeLogger(
+                    "Socket server connectted, remote address is: %s:%s",
                     host,
                     port
                 );
-                this.resources.push(client);
+                this.notifyResourceAvailable(client);
             });
             client.on("timeout", () => {
-                client.toggleIdle(true);
-                if (resourceRequestList.length > 0) {
-                    const req = resourceRequestList.shift() as ResourceRequest;
-                    req.resolve(client);
-                }
+                TimeLogger(
+                    "Socket connection resource return back to idle pool as no data sending for a time up to timeout"
+                );
+                this.notifyResourceAvailable(client);
             });
             client.on("close", () => {
-                console.log("Socket server closed");
+                TimeLogger("Socket server closed");
             });
             client.on("error", err => {
-                console.error("Socket error:", err);
+                TimeLogger("Socket error:", err);
                 this.removeResource(client.getId());
             });
         }
@@ -110,13 +117,31 @@ export default class SocketPool {
         this.resources = newResources;
     }
 
+    private notifyResourceAvailable(res: WrappedSocket) {
+        const { resourceRequestList, resources, maxIdle } = this;
+        res.toggleIdle(true);
+        if (resourceRequestList.length > 0) {
+            const req = resourceRequestList.shift() as ResourceRequest;
+            req.resolve(res);
+        } else {
+            // 如果超过最大闲置数量，释放
+            if (resources.length > maxIdle) {
+                TimeLogger("Close redundant connection resource");
+                this.removeResource(res.getId());
+                res.destroy();
+            }
+        }
+    }
+
     public getResource(): Promise<WrappedSocket> {
-        const resourceCount = this.getResourceCount();
         const { resources, maxWait } = this;
+        const idleResources = resources.filter(
+            res => res.isIdle() && !res.destroyed && !res.connecting
+        );
         return new Promise((resolve, reject) => {
-            if (resourceCount > 0) {
-                for (let i = 0; i < resourceCount; i++) {
-                    let res = resources[i];
+            if (idleResources.length > 0) {
+                for (let i = 0; i < idleResources.length; i++) {
+                    let res = idleResources[i];
                     if (res.isIdle()) {
                         res.toggleIdle(false);
                         return resolve(res);
@@ -153,10 +178,7 @@ export default class SocketPool {
         if (!res.destroyed) {
             res.toggleIdle(true);
         } else {
-            const { resources } = this;
-            this.resources = resources.filter(
-                item => item.getId() !== res.getId()
-            );
+            this.removeResource(res.getId());
         }
     }
 }

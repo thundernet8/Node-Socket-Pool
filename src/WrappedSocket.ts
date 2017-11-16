@@ -5,13 +5,20 @@ export default class WrappedSocket extends net.Socket {
 
     private idle: boolean = true;
 
-    public constructor(host: string, port: number, idleTimeout: number) {
+    private releaseCb: (client: WrappedSocket) => void;
+
+    public constructor(
+        host: string,
+        port: number,
+        idleTimeout: number,
+        release: (client: WrappedSocket) => void
+    ) {
         super();
         this.setTimeout(idleTimeout);
         this.connect(port, host);
         this.resourceId = Symbol();
 
-        // events
+        this.releaseCb = release;
     }
 
     public getId() {
@@ -28,6 +35,6 @@ export default class WrappedSocket extends net.Socket {
 
     // return socket connection to pool instead of close directly
     public release() {
-        //TODO
+        this.releaseCb(this);
     }
 }
