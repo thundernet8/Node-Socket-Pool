@@ -41,7 +41,7 @@ pool.getResource().then(client => {
 ```
 
 ### Options
-```
+``` typescript
 host: string;
 port: number;
 // 最多维持连接数
