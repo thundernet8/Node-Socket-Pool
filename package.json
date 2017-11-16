@@ -1,13 +1,20 @@
 {
-  "name": "node-socket-pool",
-  "version": "0.1.0",
-  "description": "Socket connection pool for Node",
-  "main": "index.js",
-  "repository": "git@github.com:thundernet8/Node-Socket-Pool.git",
-  "author": "wuxueqian <wuxueqian2010@hotmail.com>",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^8.0.52",
-    "typescript": "^2.6.1"
-  }
+    "name": "node-socket-pool",
+    "version": "0.1.0",
+    "description": "Socket connection pool for Node",
+    "main": "lib/index.js",
+    "repository": "git@github.com:thundernet8/Node-Socket-Pool.git",
+    "author": "wuxueqian <wuxueqian2010@hotmail.com>",
+    "license": "MIT",
+    "scripts": {
+        "build": "rimraf lib && tsc"
+    },
+    "devDependencies": {
+        "@types/node": "^8.0.52",
+        "rimraf": "^2.6.2",
+        "typescript": "^2.6.1"
+    },
+    "dependencies": {
+        "node-schedule": "^1.2.5"
+    }
 }
