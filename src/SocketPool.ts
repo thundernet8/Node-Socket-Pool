@@ -176,6 +176,7 @@ export default class SocketPool {
 
     public returnResource(res: WrappedSocket) {
         if (!res.destroyed) {
+            res.end();
             res.toggleIdle(true);
         } else {
             this.removeResource(res.getId());
