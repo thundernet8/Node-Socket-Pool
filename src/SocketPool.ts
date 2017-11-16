@@ -87,32 +87,16 @@ export default class SocketPool {
                 this.returnResource.bind(this)
             );
             this.resources.push(client);
-            client.on("connect", () => {
-                TimeLogger(
-                    "Socket server connectted, remote address is: %s:%s",
-                    host,
-                    port
-                );
-                this.notifyResourceAvailable(client);
-            });
-            client.on("timeout", () => {
-                TimeLogger(
-                    "Socket connection resource return back to idle pool as no data sending for a time up to timeout"
-                );
-                this.notifyResourceAvailable(client);
-            });
-            client.on("close", () => {
-                TimeLogger("Socket server closed");
-            });
-            client.on("error", err => {
-                TimeLogger("Socket error:", err);
-                this.removeResource(client.getId());
-            });
+            this.registerResourceEvents(client);
         }
     }
 
     private removeResource(id: Symbol) {
         const { resources } = this;
+        const resource = resources.find(res => res.getId() === id);
+        if (resource) {
+            resource.removeAllListeners();
+        }
         const newResources = resources.filter(res => res.getId() !== id);
         this.resources = newResources;
     }
@@ -131,6 +115,31 @@ export default class SocketPool {
                 res.destroy();
             }
         }
+    }
+
+    private registerResourceEvents(res: WrappedSocket) {
+        const { host, port } = this;
+        res.on("connect", () => {
+            TimeLogger(
+                "Socket server connectted, remote address is: %s:%s",
+                host,
+                port
+            );
+            this.notifyResourceAvailable(res);
+        });
+        res.on("timeout", () => {
+            TimeLogger(
+                "Socket connection resource return back to idle pool as no data sending for a time up to timeout"
+            );
+            this.notifyResourceAvailable(res);
+        });
+        res.on("close", () => {
+            TimeLogger("Socket server closed");
+        });
+        res.on("error", err => {
+            TimeLogger("Socket error:", err);
+            this.removeResource(res.getId());
+        });
     }
 
     public getResource(): Promise<WrappedSocket> {
@@ -172,7 +181,11 @@ export default class SocketPool {
     }
 
     public returnResource(res: WrappedSocket) {
+        // 移除应用中对WrappedSocket注册的各种监听事件，防止内存泄露
+        res.removeAllListeners();
         if (!res.destroyed) {
+            // 重新注册必要的生命周期监听事件
+            this.registerResourceEvents(res);
             res.toggleIdle(true);
         } else {
             this.removeResource(res.getId());
