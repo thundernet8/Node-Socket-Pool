@@ -1,16 +1,20 @@
 import * as net from "net";
 
-declare class SocketPool {
-    constructor(options: SocketPool.ISocketPoolOption);
+export as namespace SocketPool;
 
-    getResource(): Promise<SocketPool.WrappedSocket>;
+export = SocketPool;
+
+declare class SocketPool {
+    constructor(options: internal.ISocketPoolOption);
+
+    getResource(): Promise<internal.WrappedSocket>;
 
     getResourceCount(): number;
 
-    returnResource(client: SocketPool.WrappedSocket): void;
+    returnResource(client: internal.WrappedSocket): void;
 }
 
-declare namespace SocketPool {
+declare namespace internal {
     export interface ISocketPoolOption {
         host: string;
         port: number;
@@ -28,3 +32,5 @@ declare namespace SocketPool {
         release: void;
     }
 }
+
+// http://www.typescriptlang.org/docs/handbook/declaration-files/templates/module-class-d-ts.html
