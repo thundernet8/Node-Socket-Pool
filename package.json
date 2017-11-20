@@ -8,7 +8,7 @@
     "author": "wuxueqian <wuxueqian2010@hotmail.com>",
     "license": "MIT",
     "scripts": {
-        "build": "rimraf lib && tsc",
+        "build": "rimraf lib && tsc && cp src/index.d.ts lib/",
         "prepublish": "npm run build",
         "test": "node tests/index.js"
     },
