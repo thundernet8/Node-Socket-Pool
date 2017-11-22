@@ -7,7 +7,9 @@ Socket connection pool for Node
 ```
 npm install node-socket-pool
 ```
+
 or
+
 ```
 yarn add node-socket-pool
 ```
@@ -16,7 +18,7 @@ yarn add node-socket-pool
 
 ### Get a client
 
-``` typescript
+```typescript
 import SocketPool from "node-socket-pool";
 
 const pool = new SocketPool({
@@ -26,22 +28,23 @@ const pool = new SocketPool({
     maxIdle: 2,
     maxIdleTime: 30000,
     maxWait: 10000
-})
+});
 
 // in async function
-const socketClient = await pool.getResource()
+const socketClient = await pool.getResource();
 
 // or promise
-pool.getResource().then(client => {
-
-}).catch(err => {
-    // handle err
-})
-
+pool
+    .getResource()
+    .then(client => {})
+    .catch(err => {
+        // handle err
+    });
 ```
 
 ### Options
-``` typescript
+
+```typescript
 host: string;
 port: number;
 // 最多维持连接数
@@ -55,12 +58,23 @@ maxWait?: number;
 ```
 
 ### Release
-``` typescript
+
+```typescript
 client.release();
 ```
+
 or
-``` typescript
+
+```typescript
 pool.returnResource(client);
 ```
 
-client will auto return to idle resource pool if no data transportation for a time up to maxIdleTime option
+client will auto return to idle resource pool if no data transportation for a
+time up to maxIdleTime option
+
+### License
+
+Node-socket-pool is freely distributable under the terms of the
+[MIT license](https://github.com/thundernet8/Node-Socket-Pool/blob/master/LICENSE).
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fthundernet8%2FNode-Socket-Pool.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fthundernet8%2FNode-Socket-Pool?ref=badge_large)
